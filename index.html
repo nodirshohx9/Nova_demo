@@ -610,38 +610,43 @@ document.getElementById('video-btn').addEventListener('click', async ()=>{
   const btn = document.getElementById('video-btn');
   if(!topic){ statusEl.textContent = "Mavzuni kiriting."; statusEl.classList.add('err'); return; }
   statusEl.classList.remove('err');
-  statusEl.textContent = "Qidirilmoqda va tushuntirilmoqda...";
+  statusEl.textContent = "Tushuntirilmoqda...";
   resultEl.classList.remove('show');
   btn.disabled = true;
 
-  const system = `Sen mehribon matematika o'qituvchisisan. Foydalanuvchi bergan mavzuni o'zbek tilida, sodda va aniq tushuntir (5-8 jumla, misol bilan).
-Shundan so'ng, internetdan shu mavzuga oid 1-2 ta haqiqiy video darslik (masalan YouTube) topishga harakat qil va ularning nomi va havolasini ayt.
-Javobingni tushuntirish matni bilan boshla, oxirida agar video topsang "VIDEOLAR:" qatoridan keyin har birini "- Nomi: havola" formatida yoz.`;
+  const system = `Sen mehribon matematika o'qituvchisisan. Foydalanuvchi bergan mavzuni o'zbek tilida, sodda va aniq tushuntir (5-8 jumla, misol bilan).`;
+
+  const linksEl = document.getElementById('video-links');
+  linksEl.innerHTML = '';
 
   try{
     const data = await callClaude({
       system, messages: [{ role:"user", content: `Mavzu: ${topic}` }],
-      tools: [{ type:"web_search_20250305", name:"web_search" }], max_tokens: 1000
+      max_tokens: 1000
     });
-    const full = extractText(data);
-    let explainPart = full, videosPart = '';
-    const splitIdx = full.indexOf('VIDEOLAR:');
-    if(splitIdx !== -1){ explainPart = full.slice(0, splitIdx).trim(); videosPart = full.slice(splitIdx + 'VIDEOLAR:'.length).trim(); }
-    document.getElementById('video-explain').textContent = explainPart;
+    document.getElementById('video-explain').textContent = extractText(data);
 
-    const linksEl = document.getElementById('video-links');
-    linksEl.innerHTML = '';
-    const lineRegex = /-\s*(.+?):\s*(https?:\/\/\S+)/g;
-    let m; let found = false;
-    while((m = lineRegex.exec(videosPart)) !== null){
-      found = true;
-      const a = document.createElement('a');
-      a.href = m[2]; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'video-link';
-      a.innerHTML = `<svg class="yt" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="4" stroke="#3DA9FC" stroke-width="1.6"/><path d="M10 9l5 3-5 3V9z" fill="#3DA9FC"/></svg>`;
-      a.append(document.createTextNode(m[1]));
-      linksEl.appendChild(a);
-    }
-    if(!found){
+    statusEl.textContent = "Video qidirilmoqda...";
+    let videos = [];
+    try{
+      const vRes = await fetch('/api/video-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: topic + ' dars' })
+      });
+      const vData = await vRes.json();
+      if(vRes.ok) videos = vData.videos || [];
+    }catch(e){ }
+
+    if(videos.length > 0){
+      videos.forEach(v=>{
+        const a = document.createElement('a');
+        a.href = v.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.className = 'video-link';
+        a.innerHTML = `<svg class="yt" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="4" stroke="#3DA9FC" stroke-width="1.6"/><path d="M10 9l5 3-5 3V9z" fill="#3DA9FC"/></svg>`;
+        a.append(document.createTextNode(v.title));
+        linksEl.appendChild(a);
+      });
+    }else{
       const fallback = document.createElement('a');
       fallback.href = `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' dars')}`;
       fallback.target = '_blank'; fallback.rel = 'noopener noreferrer'; fallback.className = 'video-link';
@@ -649,6 +654,7 @@ Javobingni tushuntirish matni bilan boshla, oxirida agar video topsang "VIDEOLAR
       fallback.append(document.createTextNode('YouTube’da "' + topic + '" bo\'yicha darslarni qidirish'));
       linksEl.appendChild(fallback);
     }
+
     resultEl.classList.add('show');
     statusEl.textContent = "Tayyor.";
   }catch(err){
