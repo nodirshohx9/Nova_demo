@@ -81,7 +81,15 @@
   .book-card .b-del{ margin-top:10px; background:none; border:1px solid var(--border); color:#FF8A8A; font-size:11px; padding:4px 8px; border-radius:999px; cursor:pointer; font-weight:600; }
   .empty-note{ color: var(--text-dim); font-size:13px; font-family: var(--font-mono); padding:8px 0; }
 
-  .sec-title{ font-family: var(--font-display); font-weight:700; font-size:20px; margin:0 0 4px; }
+ .sec-title{ font-family: var(--font-display); font-weight:700; font-size:20px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .sec-title .icon{ color: var(--gold); font-size:18px; }
+  .field-hint{ font-size:11.5px; color: var(--text-dim); font-family: var(--font-mono); margin-top:6px; text-align:right; }
+  .empty-state{
+    text-align:center; padding: 32px 16px; border: 1.5px dashed var(--border); border-radius:12px; color: var(--text-dim);
+  }
+  .empty-state .e-icon{ font-size:26px; margin-bottom:8px; opacity:.7; }
+  .empty-state .e-text{ font-size:13px; font-family: var(--font-mono); }
+  .success-flash{ color: #8FE0A0 !important; }
 
   .back-home{ display:block; text-align:center; margin-top:28px; color: var(--text-dim); font-family: var(--font-mono); font-size:12.5px; text-decoration:none; }
   .back-home:hover{ color: var(--blue); }
@@ -112,7 +120,7 @@
 
   <div id="admin-content-wrap">
     <div class="glass-card">
-      <h2 class="sec-title">Yangi kitob qo'shish</h2>
+     <h2 class="sec-title"><span class="icon">📘</span>Yangi kitob qo'shish</h2>
       <p class="status" style="color:var(--text-dim); margin-bottom:18px;">Har bir misol yoki masalani alohida qatorga yozing.</p>
 
       <div class="row">
@@ -128,12 +136,13 @@
       <div class="field">
         <label for="admin-content">Misol va masalalar (har biri yangi qatordan)</label>
         <textarea id="admin-content" placeholder="3x + 7 = 22 tenglamani yeching&#10;Uchburchakning yuzini toping..."></textarea>
+        <div class="field-hint" id="content-counter">0 ta misol/masala</div>
       </div>
       <button class="glow-btn" id="admin-add-btn">Kitobni qo'shish</button>
       <div class="status" id="admin-status"></div>
 
       <div style="margin-top:26px; padding-top:20px; border-top:1px dashed var(--border-soft);">
-        <h2 class="sec-title">Mavjud kitoblar</h2>
+        <h2 class="sec-title"><span class="icon">📚</span>Mavjud kitoblar</h2>
         <div id="admin-book-list" class="book-grid"></div>
       </div>
     </div>
