@@ -370,48 +370,6 @@
       </div>
     </div>
   </section>
-
-  <!-- ===== ADMIN ===== -->
-  <section class="panel" id="panel-admin">
-    <h2 class="sec-title">Administrator paneli</h2>
-    <p class="sec-sub">Bu bo'lim faqat administratorlar uchun.</p>
-
-    <div class="glass-card" id="admin-gate" style="max-width:380px; margin:0 auto; text-align:center;">
-      <div style="font-size:32px; margin-bottom:10px;">🔒</div>
-      <div class="field" style="text-align:left;">
-        <label for="admin-pass">Administrator kodi</label>
-        <input type="text" id="admin-pass" placeholder="Kodni kiriting" autocomplete="off">
-      </div>
-      <button class="glow-btn" id="admin-unlock-btn" style="width:100%;">Kirish</button>
-      <div class="status" id="admin-gate-status"></div>
-    </div>
-
-    <div id="admin-content-wrap" style="display:none;">
-      <div class="glass-card">
-        <div class="row">
-          <div class="field">
-            <label for="admin-title">Kitob nomi</label>
-            <input type="text" id="admin-title" placeholder="Masalan: Algebra 8-sinf">
-          </div>
-          <div class="field">
-            <label for="admin-author">Muallif (ixtiyoriy)</label>
-            <input type="text" id="admin-author" placeholder="Masalan: A. Abdullayev">
-          </div>
-        </div>
-        <div class="field">
-          <label for="admin-content">Misol va masalalar (har biri yangi qatordan)</label>
-          <textarea id="admin-content" style="min-height:160px;" placeholder="3x + 7 = 22 tenglamani yeching&#10;Uchburchakning yuzini toping..."></textarea>
-        </div>
-        <button class="glow-btn" id="admin-add-btn">Kitobni qo'shish</button>
-        <div class="status" id="admin-status"></div>
-        <div style="margin-top:26px; padding-top:20px; border-top:1px dashed var(--border-soft);">
-          <h2 class="sec-title" style="font-size:20px;">Mavjud kitoblar</h2>
-          <div id="admin-book-list" class="book-grid" style="margin-top:12px;"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== PROFILE (PP) ===== -->
   <section class="panel" id="panel-profile">
     <h2 class="sec-title" style="text-align:center;">Shaxsiy profil</h2>
@@ -436,7 +394,6 @@
 
   <div class="footer-note">
     Nova — sun'iy intellekt yordamida ishlaydi. Javoblarni qayta tekshirib ko'ring.
-    <br><a href="#" id="admin-access-link" style="color:var(--text-dim); text-decoration:underline; font-size:11px;">Administrator kirishi</a>
   </div>
 </div>
 
@@ -724,11 +681,6 @@ async function refreshAllBookViews(){
 
 // ---- Admin access gate ----
 // ---- Admin access gate ----
-document.getElementById('admin-access-link').addEventListener('click', (e)=>{
-  e.preventDefault();
-  activateTab('admin');
-});
-
 document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
   const val = document.getElementById('admin-pass').value.trim();
   const statusEl = document.getElementById('admin-gate-status');
