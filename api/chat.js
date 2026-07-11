@@ -49,7 +49,10 @@ export default async function handler(req, res) {
 
     const geminiBody = {
       contents,
-      generationConfig: { maxOutputTokens: max_tokens || 1000 }
+      generationConfig: {
+        maxOutputTokens: Math.max(max_tokens || 1000, 1500),
+        thinkingConfig: { thinkingBudget: 0 }
+      }
     };
 
     if (system) {
