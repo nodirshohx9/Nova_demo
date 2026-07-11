@@ -183,6 +183,11 @@ positions.forEach((pos, i)=>{
 
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
+document.getElementById('admin-content').addEventListener('input', (e)=>{
+  const count = e.target.value.split('\n').map(s=>s.trim()).filter(Boolean).length;
+  document.getElementById('content-counter').textContent = count + ' ta misol/masala';
+});
+
 // ---------- Admin password gate (server-side check) ----------
 document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
   const val = document.getElementById('admin-pass').value.trim();
@@ -238,7 +243,12 @@ async function loadBooks(){
 function renderBookGrid(containerEl, books){
   containerEl.innerHTML = '';
   if(books.length === 0){
-    containerEl.innerHTML = '<div class="empty-note">Hozircha kitoblar yo\'q.</div>';
+    containerEl.innerHTML = `
+      <div class="empty-state">
+        <div class="e-icon">📖</div>
+        <div class="e-text">Hozircha kitoblar yo'q. Yuqoridagi formadan birinchi kitobingizni qo'shing.</div>
+      </div>
+    `;
     return;
   }
   books.forEach(b=>{
@@ -285,8 +295,11 @@ document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
     document.getElementById('admin-title').value = '';
     document.getElementById('admin-author').value = '';
     document.getElementById('admin-content').value = '';
-    statusEl.textContent = "Kitob qo'shildi.";
+    statusEl.textContent = "✓ Kitob qo'shildi.";
+    statusEl.classList.add('success-flash');
+    document.getElementById('content-counter').textContent = '0 ta misol/masala';
     await refreshBookList();
+    setTimeout(()=>{ statusEl.classList.remove('success-flash'); statusEl.textContent=''; }, 3000);
   }catch(err){ statusEl.textContent = "Xatolik: " + err.message; statusEl.classList.add('err'); }
   finally{ btn.disabled = false; }
 });
