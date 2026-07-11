@@ -270,6 +270,10 @@
   .signed-in-badge{ display:none; background: var(--gold-soft); border:1px solid var(--gold); border-radius:12px; padding:14px; margin-top:16px; font-size:13.5px; }
   .signed-in-badge.show{ display:block; }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -775,7 +779,14 @@ function appendMsg(role, text){
     <div class="avatar ${role}">${avatarChar}</div>
     <div><div class="msg-name">${name}</div><div class="bubble"></div></div>
   `;
-  div.querySelector('.bubble').textContent = text;
+  const bubbleEl = div.querySelector('.bubble');
+  bubbleEl.innerHTML = marked.parse(text);
+  renderMathInElement(bubbleEl, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "$", right: "$", display: false}
+    ]
+  });
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
