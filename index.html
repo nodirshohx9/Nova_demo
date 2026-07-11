@@ -723,25 +723,39 @@ async function refreshAllBookViews(){
 }
 
 // ---- Admin access gate ----
-const ADMIN_CODE = "nova2026"; // demo-level gate only, not real security
-let adminUnlocked = false;
-
+// ---- Admin access gate ----
 document.getElementById('admin-access-link').addEventListener('click', (e)=>{
   e.preventDefault();
   activateTab('admin');
 });
 
-document.getElementById('admin-unlock-btn').addEventListener('click', ()=>{
+document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
   const val = document.getElementById('admin-pass').value.trim();
   const statusEl = document.getElementById('admin-gate-status');
-  if(val === ADMIN_CODE){
-    adminUnlocked = true;
-    document.getElementById('admin-gate').style.display = 'none';
-    document.getElementById('admin-content-wrap').style.display = 'block';
-    statusEl.textContent = '';
-  }else{
-    statusEl.textContent = "Kod noto'g'ri.";
+  const btn = document.getElementById('admin-unlock-btn');
+  btn.disabled = true;
+  statusEl.classList.remove('err');
+  statusEl.textContent = "Tekshirilmoqda...";
+  try{
+    const res = await fetch('/api/admin-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: val })
+    });
+    const data = await res.json();
+    if(data.ok){
+      document.getElementById('admin-gate').style.display = 'none';
+      document.getElementById('admin-content-wrap').style.display = 'block';
+      statusEl.textContent = '';
+    }else{
+      statusEl.textContent = "Kod noto'g'ri.";
+      statusEl.classList.add('err');
+    }
+  }catch(err){
+    statusEl.textContent = "Xatolik: " + err.message;
     statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
   }
 });
 document.getElementById('admin-pass').addEventListener('keydown', (e)=>{
