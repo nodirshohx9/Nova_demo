@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     const videos = (data.items || []).map(item => ({
       title: item.snippet.title,
-      url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+      videoId: item.id.videoId
     }));
 
     return res.status(200).json({ videos });
