@@ -587,12 +587,24 @@ JAVOBNI FAQAT quyidagi JSON formatida qaytar, hech qanday qo'shimcha matn, izoh 
       const div = document.createElement('div');
       div.className = 'step';
       div.innerHTML = `<div class="step-num">${i+1}</div><div class="step-text"></div>`;
-      div.querySelector('.step-text').textContent = s;
+      const stepTextEl = div.querySelector('.step-text');
+      stepTextEl.innerHTML = marked.parse(s);
+      renderMathInElement(stepTextEl, {
+        delimiters: [
+          {left: "$$", right: "$$", display: true},
+          {left: "$", right: "$", display: false}
+        ]
+      });
       stepsEl.appendChild(div);
     });
     const finalEl = document.getElementById('solve-final');
-    finalEl.innerHTML = parsed.answer ? '<b>Javob:</b> ' : '';
-    finalEl.append(document.createTextNode(parsed.answer || ''));
+    finalEl.innerHTML = parsed.answer ? '<b>Javob:</b> ' + marked.parseInline(parsed.answer) : '';
+    renderMathInElement(finalEl, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
     resultEl.classList.add('show');
     statusEl.textContent = "Tayyor.";
   }catch(err){
