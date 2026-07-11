@@ -239,7 +239,10 @@
   .problem-item:hover{ border-color: var(--blue); }
 
   /* ---------- Video panel ---------- */
-  .video-links{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+  .video-links{ margin-top:14px; display:flex; flex-direction:column; gap:20px; }
+  .video-embed{ background: rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:14px; padding:14px; }
+  .video-embed-title{ font-size:14px; font-weight:600; margin-bottom:10px; color: var(--text); }
+  .video-embed iframe{ width:100%; aspect-ratio:16/9; border-radius:10px; border:none; }
   .video-link{
     display:flex; align-items:center; gap:10px; padding:10px 14px; background: rgba(255,255,255,0.03);
     border:1px solid var(--border-soft); border-radius:10px; color: var(--blue); text-decoration:none; font-size:13.5px;
