@@ -1,13 +1,15 @@
 // api/upload.js
-// To'g'ridan-to'g'ri yuklash (client upload) uchun ruxsat beradi.
-// Fayl bizning serverimiz orqali emas, to'g'ridan-to'g'ri Blob'ga yuklanadi — tezroq.
+// Katta fayllar to'g'ridan-to'g'ri Vercel Blob'ga yuklanishi uchun
+// (serverimiz orqali o'tmaydi, shuning uchun hajm chegarasi muammosi yo'q).
 
 import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
+  const body = req.body;
+
   try {
     const jsonResponse = await handleUpload({
-      body: req.body,
+      body,
       request: req,
       onBeforeGenerateToken: async () => {
         return {
@@ -16,9 +18,10 @@ export default async function handler(req, res) {
         };
       },
       onUploadCompleted: async () => {
-        // hozircha qo'shimcha amal shart emas
+        // Hech narsa qilish shart emas
       }
     });
+
     return res.status(200).json(jsonResponse);
   } catch (error) {
     return res.status(400).json({ error: error.message });
