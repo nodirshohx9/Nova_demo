@@ -94,6 +94,10 @@
   .back-home{ display:block; text-align:center; margin-top:28px; color: var(--text-dim); font-family: var(--font-mono); font-size:12.5px; text-decoration:none; }
   .back-home:hover{ color: var(--blue); }
 </style>
+<script type="module">
+  import { upload } from 'https://esm.sh/@vercel/blob@0.27.0/client';
+  window.__blobUpload = upload;
+</script>
 </head>
 <body>
 
@@ -295,20 +299,16 @@ document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
   statusEl.textContent = "Fayl yuklanmoqda...";
   btn.disabled = true;
   try{
-    const fileBase64 = await fileToBase64(file);
-    const uploadRes = await fetch('/api/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: file.name, fileBase64 })
+    const blobResult = await window.__blobUpload(file.name, file, {
+      access: 'public',
+      handleUploadUrl: '/api/upload'
     });
-    const uploadData = await uploadRes.json();
-    if(!uploadRes.ok) throw new Error(uploadData.error || "Fayl yuklashda xatolik");
 
     statusEl.textContent = "Saqlanmoqda...";
     const res = await fetch('/api/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, author, fileUrl: uploadData.url })
+      body: JSON.stringify({ title, author, fileUrl: blobResult.url })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Saqlash muvaffaqiyatsiz tugadi");
