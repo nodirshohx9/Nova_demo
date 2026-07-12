@@ -39,13 +39,13 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { title, author, content } = req.body || {};
-      if (!title || !content) {
-        return res.status(400).json({ error: "title va content kerak" });
+      const { title, author, fileUrl } = req.body || {};
+      if (!title || !fileUrl) {
+        return res.status(400).json({ error: "title va fileUrl kerak" });
       }
       const book = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        title, author: author || '', content,
+        title, author: author || '', fileUrl,
         createdAt: Date.now()
       };
       await redisCommand(['HSET', HASH_KEY, book.id, JSON.stringify(book)]);
