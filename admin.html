@@ -183,10 +183,19 @@ positions.forEach((pos, i)=>{
 
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-document.getElementById('admin-content').addEventListener('input', (e)=>{
-  const count = e.target.value.split('\n').map(s=>s.trim()).filter(Boolean).length;
-  document.getElementById('content-counter').textContent = count + ' ta misol/masala';
+document.getElementById('admin-pdf').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  document.getElementById('pdf-filename').textContent = file ? file.name : '';
 });
+
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 // ---------- Admin password gate (server-side check) ----------
 document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
@@ -246,11 +255,10 @@ function renderBookGrid(containerEl, books){
   books.forEach(b=>{
     const card = document.createElement('div');
     card.className = 'book-card';
-    const problemCount = (b.content || '').split('\n').map(s=>s.trim()).filter(Boolean).length;
-    card.innerHTML = `
+   card.innerHTML = `
       <div class="b-title">${escapeHtml(b.title)}</div>
       ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
-      <div class="b-count">${problemCount} ta misol/masala</div>
+      <div class="b-count">📄 PDF kitob</div>
     `;
     const delBtn = document.createElement('button');
     delBtn.className = 'b-del';
@@ -279,27 +287,38 @@ async function refreshBookList(){
 document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
   const title = document.getElementById('admin-title').value.trim();
   const author = document.getElementById('admin-author').value.trim();
-  const content = document.getElementById('admin-content').value.trim();
+  const file = document.getElementById('admin-pdf').files[0];
   const statusEl = document.getElementById('admin-status');
   const btn = document.getElementById('admin-add-btn');
-  if(!title || !content){ statusEl.textContent = "Kitob nomi va kamida bitta misol/masala kiriting."; statusEl.classList.add('err'); return; }
+  if(!title || !file){ statusEl.textContent = "Kitob nomi va PDF faylni tanlang."; statusEl.classList.add('err'); return; }
   statusEl.classList.remove('err');
-  statusEl.textContent = "Saqlanmoqda...";
+  statusEl.textContent = "Fayl yuklanmoqda...";
   btn.disabled = true;
   try{
+    const fileBase64 = await fileToBase64(file);
+    const uploadRes = await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, fileBase64 })
+    });
+    const uploadData = await uploadRes.json();
+    if(!uploadRes.ok) throw new Error(uploadData.error || "Fayl yuklashda xatolik");
+
+    statusEl.textContent = "Saqlanmoqda...";
     const res = await fetch('/api/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, author, content })
+      body: JSON.stringify({ title, author, fileUrl: uploadData.url })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Saqlash muvaffaqiyatsiz tugadi");
+
     document.getElementById('admin-title').value = '';
     document.getElementById('admin-author').value = '';
-    document.getElementById('admin-content').value = '';
+    document.getElementById('admin-pdf').value = '';
+    document.getElementById('pdf-filename').textContent = '';
     statusEl.textContent = "✓ Kitob qo'shildi.";
     statusEl.classList.add('success-flash');
-    document.getElementById('content-counter').textContent = '0 ta misol/masala';
     await refreshBookList();
     setTimeout(()=>{ statusEl.classList.remove('success-flash'); statusEl.textContent=''; }, 3000);
   }catch(err){ statusEl.textContent = "Xatolik: " + err.message; statusEl.classList.add('err'); }
