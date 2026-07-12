@@ -226,17 +226,9 @@ document.getElementById('admin-pass').addEventListener('keydown', (e)=>{
 // ---------- Books (shared storage) ----------
 async function loadBooks(){
   try{
-    const list = await window.storage.list('books:', true);
-    const keys = (list && list.keys) || [];
-    const books = [];
-    for(const key of keys){
-      try{
-        const item = await window.storage.get(key, true);
-        if(item && item.value) books.push(JSON.parse(item.value));
-      }catch(e){}
-    }
-    books.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-    return books;
+    const res = await fetch('/api/books');
+    const data = await res.json();
+    return data.books || [];
   }catch(e){ return []; }
 }
 
@@ -263,10 +255,16 @@ function renderBookGrid(containerEl, books){
     const delBtn = document.createElement('button');
     delBtn.className = 'b-del';
     delBtn.textContent = "O'chirish";
-    delBtn.addEventListener('click', async ()=>{
+   delBtn.addEventListener('click', async ()=>{
       delBtn.disabled = true;
-      try{ await window.storage.delete('books:' + b.id, true); await refreshBookList(); }
-      catch(err){ alert("O'chirishda xatolik: " + err.message); delBtn.disabled = false; }
+      try{
+        await fetch('/api/books', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: b.id })
+        });
+        await refreshBookList();
+      }catch(err){ alert("O'chirishda xatolik: " + err.message); delBtn.disabled = false; }
     });
     card.appendChild(delBtn);
     containerEl.appendChild(card);
@@ -288,10 +286,14 @@ document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
   statusEl.classList.remove('err');
   statusEl.textContent = "Saqlanmoqda...";
   btn.disabled = true;
-  const book = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), title, author, content, createdAt: Date.now() };
   try{
-    const result = await window.storage.set('books:' + book.id, JSON.stringify(book), true);
-    if(!result) throw new Error("Saqlash muvaffaqiyatsiz tugadi");
+    const res = await fetch('/api/books', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, author, content })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "Saqlash muvaffaqiyatsiz tugadi");
     document.getElementById('admin-title').value = '';
     document.getElementById('admin-author').value = '';
     document.getElementById('admin-content').value = '';
