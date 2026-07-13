@@ -1,29 +1,27 @@
 // api/upload.js
-// Katta fayllar to'g'ridan-to'g'ri Vercel Blob'ga yuklanishi uchun
-// (serverimiz orqali o'tmaydi, shuning uchun hajm chegarasi muammosi yo'q).
+export const config = {
+  api: { bodyParser: { sizeLimit: '5mb' } }
+};
 
-import { handleUpload } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
-  const body = req.body;
-
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: "Faqat POST so'rovlar qabul qilinadi" });
+  }
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request: req,
-      onBeforeGenerateToken: async () => {
-        return {
-          allowedContentTypes: ['application/pdf'],
-          addRandomSuffix: true
-        };
-      },
-      onUploadCompleted: async () => {
-        // Hech narsa qilish shart emas
-      }
+    const { filename, fileBase64 } = req.body || {};
+    if (!filename || !fileBase64) {
+      return res.status(400).json({ error: 'filename va fileBase64 kerak' });
+    }
+    const buffer = Buffer.from(fileBase64, 'base64');
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: 'application/pdf',
+      addRandomSuffix: true
     });
-
-   } catch (error) {
-    console.error('Upload xatoligi:', error.message);
-    return res.status(400).json({ error: error.message });
+    return res.status(200).json({ url: blob.url });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 }
