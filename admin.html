@@ -95,10 +95,6 @@
   .back-home:hover{ color: var(--blue); }
 </style>
 <script type="module">
-  import { upload } from 'https://esm.sh/@vercel/blob@0.27.0/client';
-  window.__blobUpload = upload;
-</script>
-<script type="module">
   import { put } from 'https://esm.sh/@vercel/blob@0.27.0/client';
   window.__blobPut = put;
 </script>
@@ -310,10 +306,18 @@ document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
   statusEl.classList.remove('err');
   statusEl.textContent = "Fayl yuklanmoqda...";
   btn.disabled = true;
+ if(!window.__uploadToken){
+    statusEl.textContent = "Ruxsat topilmadi, sahifani yangilab (F5) qayta urinib ko'ring.";
+    statusEl.classList.add('err');
+    return;
+  }
+
   try{
-    const blobResult = await window.__blobUpload(file.name, file, {
+    const blobResult = await window.__blobPut(file.name, file, {
       access: 'public',
-      handleUploadUrl: '/api/upload'
+      contentType: 'application/pdf',
+      addRandomSuffix: true,
+      token: window.__uploadToken
     });
 
     statusEl.textContent = "Saqlanmoqda...";
