@@ -677,66 +677,6 @@ async function refreshAllBookViews(){
   renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
   renderBookGrid(document.getElementById('admin-book-list'), books, { selectable:false, deletable:true });
 }
-
-// ---- Admin access gate ----
-// ---- Admin access gate ----
-document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
-  const val = document.getElementById('admin-pass').value.trim();
-  const statusEl = document.getElementById('admin-gate-status');
-  const btn = document.getElementById('admin-unlock-btn');
-  btn.disabled = true;
-  statusEl.classList.remove('err');
-  statusEl.textContent = "Tekshirilmoqda...";
-  try{
-    const res = await fetch('/api/admin-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: val })
-    });
-    const data = await res.json();
-    if(data.ok){
-      document.getElementById('admin-gate').style.display = 'none';
-      document.getElementById('admin-content-wrap').style.display = 'block';
-      statusEl.textContent = '';
-    }else{
-      statusEl.textContent = "Kod noto'g'ri.";
-      statusEl.classList.add('err');
-    }
-  }catch(err){
-    statusEl.textContent = "Xatolik: " + err.message;
-    statusEl.classList.add('err');
-  }finally{
-    btn.disabled = false;
-  }
-});
-document.getElementById('admin-pass').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter'){ document.getElementById('admin-unlock-btn').click(); }
-});
-
-// ---- Admin: add book ----
-document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
-  const title = document.getElementById('admin-title').value.trim();
-  const author = document.getElementById('admin-author').value.trim();
-  const content = document.getElementById('admin-content').value.trim();
-  const statusEl = document.getElementById('admin-status');
-  const btn = document.getElementById('admin-add-btn');
-  if(!title || !content){ statusEl.textContent = "Kitob nomi va kamida bitta misol/masala kiriting."; statusEl.classList.add('err'); return; }
-  statusEl.classList.remove('err');
-  statusEl.textContent = "Saqlanmoqda...";
-  btn.disabled = true;
-  const book = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), title, author, content, createdAt: Date.now() };
-  try{
-    const result = await window.storage.set('books:' + book.id, JSON.stringify(book), true);
-    if(!result) throw new Error("Saqlash muvaffaqiyatsiz tugadi");
-    document.getElementById('admin-title').value = '';
-    document.getElementById('admin-author').value = '';
-    document.getElementById('admin-content').value = '';
-    statusEl.textContent = "Kitob qo'shildi.";
-    await refreshAllBookViews();
-  }catch(err){ statusEl.textContent = "Xatolik: " + err.message; statusEl.classList.add('err'); }
-  finally{ btn.disabled = false; }
-});
-
 // ================= USTOZ AI (Gulchiroy) CHAT =================
 let chatHistory = []; // {role, content}
 
