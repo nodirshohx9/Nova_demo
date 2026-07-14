@@ -621,10 +621,40 @@ document.getElementById('video-btn').addEventListener('click', async ()=>{
 });
 
 // ================= BOOKS (shared storage) =================
+let booksCache = [];
+let activeBook = null;
+
+async function loadBooks(){
+  try{
+    const res = await fetch('/api/books');
+    const data = await res.json();
+    booksCache = data.books || [];
+    return booksCache;
+  }catch(e){ return []; }
+}
+
+function renderBookGrid(containerEl, books, {selectable, deletable}){
+  containerEl.innerHTML = '';
+  if(books.length === 0){
+    containerEl.innerHTML = '<div class="empty-note">Hozircha kitoblar yo\'q.</div>';
+    return;
+  }
+  books.forEach(b=>{
+    const card = document.createElement('div');
+    card.className = 'book-card';
+    card.innerHTML = `
+      <div class="b-title">${escapeHtml(b.title)}</div>
+      ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
+      <div class="b-count">📄 PDF kitob</div>
+    `;
+    if(selectable){ card.addEventListener('click', ()=> openBookInChat(b)); }
+    containerEl.appendChild(card);
+  });
+}
+
 async function refreshAllBookViews(){
   const books = await loadBooks();
   renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
-  renderBookGrid(document.getElementById('admin-book-list'), books, { selectable:false, deletable:true });
 }
 // ================= USTOZ AI (Gulchiroy) CHAT =================
 let chatHistory = []; // {role, content}
