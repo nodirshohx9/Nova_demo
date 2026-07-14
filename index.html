@@ -779,6 +779,7 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
     statusEl.textContent = "Xatolik yuz berdi: " + err.message;
     statusEl.classList.add('err');
   }finally{ btn.disabled = false; }
+}
 document.getElementById('chat-send').addEventListener('click', sendChat);
 document.getElementById('chat-input').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
