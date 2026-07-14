@@ -1,5 +1,8 @@
 // api/chat-stream.js
-// Gemini javobini so'z-so'z, jonli oqim (streaming) tarzida frontendga uzatadi.
+// Edge Runtime orqali ishlaydi - bu Vercel'ning oqim (streaming) uchun
+// eng barqaror texnologiyasi, uzilib qolish muammosini bartaraf etadi.
+
+export const config = { runtime: 'edge' };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
@@ -16,83 +19,115 @@ function toGeminiParts(content) {
   return [{ text: String(content || '') }];
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: "Faqat POST so'rovlar qabul qilinadi" });
+export default async function handler(request) {
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: "Faqat POST so'rovlar qabul qilinadi" }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });
+    return new Response(JSON.stringify({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
+  let body;
   try {
-    const { system, messages = [], max_tokens } = req.body || {};
+    body = await request.json();
+  } catch (e) {
+    return new Response(JSON.stringify({ error: "So'rov matni noto'g'ri" }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
-    const contents = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: toGeminiParts(m.content)
-    }));
+  const { system, messages = [], max_tokens } = body;
 
-    const geminiBody = {
-      contents,
-      generationConfig: {
-        maxOutputTokens: Math.max(max_tokens || 1000, 1500),
-        thinkingConfig: { thinkingBudget: 0 }
-      }
-    };
-    if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
+  const contents = messages.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: toGeminiParts(m.content)
+  }));
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-    const geminiRes = await fetch(url, {
+  const geminiBody = {
+    contents,
+    generationConfig: {
+      maxOutputTokens: Math.max(max_tokens || 1000, 1500),
+      thinkingConfig: { thinkingBudget: 0 }
+    }
+  };
+  if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+  let geminiRes;
+  try {
+    geminiRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(geminiBody)
     });
-
-    if (!geminiRes.ok || !geminiRes.body) {
-      const errData = await geminiRes.json().catch(() => ({}));
-      return res.status(geminiRes.status).json({ error: errData.error?.message || 'Gemini API xatoligi' });
-    }
-
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
+  }
 
-    const reader = geminiRes.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+  if (!geminiRes.ok || !geminiRes.body) {
+    const errData = await geminiRes.json().catch(() => ({}));
+    return new Response(JSON.stringify({ error: errData.error?.message || 'Gemini API xatoligi' }), {
+      status: geminiRes.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop();
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const jsonStr = line.slice(6).trim();
-        if (!jsonStr) continue;
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const text = (parsed.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-          if (text) {
-            res.write(`data: ${JSON.stringify({ text })}\n\n`);
+  const stream = new ReadableStream({
+    async start(controller) {
+      const reader = geminiRes.body.getReader();
+      let buffer = '';
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const text = (parsed.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+              if (text) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              }
+            } catch (e) { /* chunk to'liq emas, o'tkazib yuboramiz */ }
           }
-        } catch (e) { /* chunk to'liq emas, o'tkazib yuboramiz */ }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      } catch (err) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`));
+      } finally {
+        controller.close();
       }
     }
+  });
 
-    res.write('data: [DONE]\n\n');
-    res.end();
-  } catch (err) {
-    if (!res.headersSent) {
-      res.status(500).json({ error: err.message });
-    } else {
-      res.end();
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no'
     }
-  }
+  });
 }
