@@ -621,57 +621,6 @@ document.getElementById('video-btn').addEventListener('click', async ()=>{
 });
 
 // ================= BOOKS (shared storage) =================
-let booksCache = [];
-let activeBook = null;
-
-async function loadBooks(){
-  try{
-    const list = await window.storage.list('books:', true);
-    const keys = (list && list.keys) || [];
-    const books = [];
-    for(const key of keys){
-      try{
-        const item = await window.storage.get(key, true);
-        if(item && item.value) books.push(JSON.parse(item.value));
-      }catch(e){}
-    }
-    books.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-    booksCache = books;
-    return books;
-  }catch(e){ return []; }
-}
-
-function renderBookGrid(containerEl, books, {selectable, deletable}){
-  containerEl.innerHTML = '';
-  if(books.length === 0){
-    containerEl.innerHTML = '<div class="empty-note">Hozircha kitoblar yo\'q.</div>';
-    return;
-  }
-  books.forEach(b=>{
-    const card = document.createElement('div');
-    card.className = 'book-card';
-    card.innerHTML = `
-      <div class="b-title">${escapeHtml(b.title)}</div>
-      ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
-      <div class="b-count">📄 PDF kitob</div>
-    `;
-    if(deletable){
-      const delBtn = document.createElement('button');
-      delBtn.className = 'b-del';
-      delBtn.textContent = "O'chirish";
-      delBtn.addEventListener('click', async (e)=>{
-        e.stopPropagation();
-        delBtn.disabled = true;
-        try{ await window.storage.delete('books:' + b.id, true); await refreshAllBookViews(); }
-        catch(err){ alert("O'chirishda xatolik: " + err.message); delBtn.disabled = false; }
-      });
-      card.appendChild(delBtn);
-    }
-    if(selectable){ card.addEventListener('click', ()=> openBookInChat(b)); }
-    containerEl.appendChild(card);
-  });
-}
-
 async function refreshAllBookViews(){
   const books = await loadBooks();
   renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
