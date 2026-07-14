@@ -2,7 +2,7 @@
 // Edge Runtime orqali ishlaydi - bu Vercel'ning oqim (streaming) uchun
 // eng barqaror texnologiyasi, uzilib qolish muammosini bartaraf etadi.
 
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'edge', regions: ['iad1'] };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
