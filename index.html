@@ -228,6 +228,11 @@
 
 </parameter>
   .chat-input-row{ display:flex; gap:10px; margin-top:14px; }
+.typing-dots{ display:flex; gap:4px; padding:4px 0; }
+.typing-dots span{ width:7px; height:7px; border-radius:50%; background: var(--gold); animation: typingBounce 1.2s infinite ease-in-out; }
+.typing-dots span:nth-child(2){ animation-delay: 0.2s; }
+.typing-dots span:nth-child(3){ animation-delay: 0.4s; }
+@keyframes typingBounce{ 0%, 60%, 100%{ transform: translateY(0); opacity:.5; } 30%{ transform: translateY(-5px); opacity:1; } }
   .chat-input-row textarea{ min-height:48px; flex:1; }
   .chat-input-row button{ flex:none; }
 
@@ -693,6 +698,10 @@ function appendMsg(role, text){
   win.scrollTop = win.scrollHeight;
 }
 
+function appendTypingBubble(){ const win = document.getElementById('chat-window'); const div = document.createElement('div'); div.className = 'msg teacher'; div.innerHTML = `<div class="avatar teacher">👩‍🏫</div><div><div class="msg-name">Gulchiroy</div><div class="bubble typing-dots"><span></span><span></span><span></span></div></div>`; win.appendChild(div); win.scrollTop = win.scrollHeight; return div; }
+
+function typewriterReveal(div, text){ const bubbleEl = div.querySelector('.bubble'); bubbleEl.classList.remove('typing-dots'); const win = document.getElementById('chat-window'); let i = 0; function step(){ i += 3; bubbleEl.textContent = text.slice(0, i); win.scrollTop = win.scrollHeight; if(i < text.length){ setTimeout(step, 12); }else{ bubbleEl.innerHTML = marked.parse(text); renderMathInElement(bubbleEl, { delimiters: [{left: "$$", right: "$$", display: true},{left: "$", right: "$", display: false}] }); win.scrollTop = win.scrollHeight; } } step(); }
+
 async function sendChat(){
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
@@ -703,7 +712,8 @@ async function sendChat(){
   chatHistory.push({ role:'user', content: text });
   input.value = '';
   statusEl.classList.remove('err');
-  statusEl.textContent = "Gulchiroy yozmoqda...";
+  statusEl.textContent = '';
+const typingDiv = appendTypingBubble();
   btn.disabled = true;
 
   let system = `Sen Gulchiroy ismli, tajribali, mehribon va sabr-toqatli matematika ustozisan. O'zbek tilida javob ber.
@@ -718,11 +728,12 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
   try{
     const data = await callClaude({ system, messages: chatHistory, max_tokens: 1000 });
     const reply = extractText(data);
-    appendMsg('teacher', reply);
+    typewriterReveal(typingDiv, reply);
     chatHistory.push({ role:'assistant', content: reply });
     statusEl.textContent = '';
   }catch(err){
-    statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+    typingDiv.remove();
+statusEl.textContent = "Xatolik yuz berdi: " + err.message;
     statusEl.classList.add('err');
   }finally{ btn.disabled = false; }
 }
