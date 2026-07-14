@@ -726,18 +726,59 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
     system += `\n\nFoydalanuvchi hozir "${activeBook.title}" nomli darslik bilan ishlayapti (PDF holida, siz matnini ko'rmaysiz). Savollariga umumiy matematik bilim asosida javob bering, kerak bo'lsa aniqroq savol so'rang.`;
   }
 
+  const bubbleEl = typingDiv.querySelector('.bubble');
+  const win = document.getElementById('chat-window');
+
   try{
-    const data = await callClaude({ system, messages: chatHistory, max_tokens: 1000 });
-    const reply = extractText(data);
-    typewriterReveal(typingDiv, reply);
-    chatHistory.push({ role:'assistant', content: reply });
-    statusEl.textContent = '';
+    const res = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: chatHistory, max_tokens: 1000 })
+    });
+    if(!res.ok || !res.body){
+      const errData = await res.json().catch(()=>({}));
+      throw new Error(errData.error || "Xatolik yuz berdi");
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if(payload === '[DONE]') continue;
+        try{
+          const parsed = JSON.parse(payload);
+          if(parsed.text){
+            fullText += parsed.text;
+            bubbleEl.textContent = fullText;
+            win.scrollTop = win.scrollHeight;
+          }
+        }catch(e){}
+      }
+    }
+
+    bubbleEl.innerHTML = marked.parse(fullText);
+    renderMathInElement(bubbleEl, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
+    chatHistory.push({ role:'assistant', content: fullText });
   }catch(err){
     typingDiv.remove();
-statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+    statusEl.textContent = "Xatolik yuz berdi: " + err.message;
     statusEl.classList.add('err');
   }finally{ btn.disabled = false; }
-}
 document.getElementById('chat-send').addEventListener('click', sendChat);
 document.getElementById('chat-input').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
