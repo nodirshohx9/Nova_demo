@@ -369,12 +369,12 @@
             </div>
           </div>
           <div class="chat-input-row">
-            <textarea id="chat-input" placeholder="Savolingizni yozing..."></textarea>
+            <textarea id="chat-input" placeholder="Savolingizni yozing..." style="flex:1;"></textarea>
             <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
-            <button class="ghost-btn" id="chat-image-btn" title="Rasm biriktirish" style="border-color: var(--gold); color: var(--gold);">📷</button>
-            <button class="glow-btn" id="chat-send">Yuborish</button>
+            <button class="icon-btn" id="chat-image-btn" title="Rasm biriktirish">+</button>
+            <button class="icon-btn send-btn" id="chat-send" title="Yuborish">➤</button>
           </div>
-          <div id="chat-image-preview" style="display:none; margin-top:8px;"></div>
+          <div id="chat-image-preview" style="display:none;"></div>
           <div class="status" id="chat-status"></div>
         </div>
         <div class="book-col" id="book-col">
@@ -723,18 +723,67 @@ function appendTypingBubble(){ const win = document.getElementById('chat-window'
 
 function typewriterReveal(div, text){ const bubbleEl = div.querySelector('.bubble'); bubbleEl.classList.remove('typing-dots'); const win = document.getElementById('chat-window'); let i = 0; function step(){ i += 3; bubbleEl.textContent = text.slice(0, i); win.scrollTop = win.scrollHeight; if(i < text.length){ setTimeout(step, 12); }else{ bubbleEl.innerHTML = marked.parse(text); renderMathInElement(bubbleEl, { delimiters: [{left: "$$", right: "$$", display: true},{left: "$", right: "$", display: false}] }); win.scrollTop = win.scrollHeight; } } step(); }
 
+let chatImageBase64 = null;
+let chatImageMedia = null;
+let chatAbortController = null;
+
+document.getElementById('chat-image-btn').addEventListener('click', ()=>{
+  document.getElementById('chat-image-input').click();
+});
+document.getElementById('chat-image-input').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  chatImageMedia = file.type;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    chatImageBase64 = reader.result.split(',')[1];
+    const previewEl = document.getElementById('chat-image-preview');
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `<div class="chat-thumb"><img src="${reader.result}"><div class="rm" id="chat-image-remove">✕</div></div>`;
+    document.getElementById('chat-image-remove').addEventListener('click', ()=>{
+      chatImageBase64 = null; chatImageMedia = null;
+      previewEl.style.display = 'none'; previewEl.innerHTML = '';
+      document.getElementById('chat-image-input').value = '';
+    });
+  };
+  reader.readAsDataURL(file);
+});
+
 async function sendChat(){
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   const statusEl = document.getElementById('chat-status');
   const btn = document.getElementById('chat-send');
-  if(!text) return;
-  appendMsg('user', text);
-  chatHistory.push({ role:'user', content: text });
+
+  if(btn.classList.contains('stop-state')){
+    if(chatAbortController) chatAbortController.abort();
+    return;
+  }
+
+  if(!text && !chatImageBase64) return;
+
+  let userContent = text;
+  if(chatImageBase64){
+    userContent = [
+      { type:'image', source:{ type:'base64', media_type: chatImageMedia, data: chatImageBase64 } },
+      { type:'text', text: text || "Rasmdagi masalani tushuntiring." }
+    ];
+  }
+  appendMsg('user', text || "📷 Rasm yuborildi");
+  chatHistory.push({ role:'user', content: userContent });
   input.value = '';
+  const hadImage = !!chatImageBase64;
+  chatImageBase64 = null; chatImageMedia = null;
+  document.getElementById('chat-image-preview').style.display = 'none';
+  document.getElementById('chat-image-preview').innerHTML = '';
+  document.getElementById('chat-image-input').value = '';
+
   statusEl.classList.remove('err');
   statusEl.textContent = '';
-const typingDiv = appendTypingBubble();
+  btn.textContent = '⏹';
+  btn.classList.add('stop-state');
+  btn.title = "To'xtatish";
+  const typingDiv = appendTypingBubble();
   btn.disabled = true;
 
   let system = `Sen Gulchiroy ismli, tajribali, mehribon va sabr-toqatli matematika ustozisan. O'zbek tilida javob ber.
@@ -748,14 +797,6 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
   }
 
   const bubbleEl = typingDiv.querySelector('.bubble');
-  const win = document.getElementById('chat-window');
-
-  try{
-    const res = await fetch('/api/chat-stream', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: chatHistory, max_tokens: 1000 })
-    });
     if(!res.ok || !res.body){
       const errData = await res.json().catch(()=>({}));
       throw new Error(errData.error || "Xatolik yuz berdi");
@@ -796,10 +837,19 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
     });
     chatHistory.push({ role:'assistant', content: fullText });
   }catch(err){
-    typingDiv.remove();
-    statusEl.textContent = "Xatolik yuz berdi: " + err.message;
-    statusEl.classList.add('err');
-  }finally{ btn.disabled = false; }
+    if(err.name === 'AbortError'){
+      bubbleEl.innerHTML = marked.parse(bubbleEl.textContent || "To'xtatildi.");
+    }else{
+      typingDiv.remove();
+      statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+      statusEl.classList.add('err');
+    }
+  }finally{
+    btn.textContent = '➤';
+    btn.classList.remove('stop-state');
+    btn.title = "Yuborish";
+    chatAbortController = null;
+  }
 }
 document.getElementById('chat-send').addEventListener('click', sendChat);
 document.getElementById('chat-input').addEventListener('keydown', (e)=>{
