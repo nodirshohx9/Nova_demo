@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       request: req,
       onBeforeGenerateToken: async () => {
         return {
-          allowedContentTypes: ['application/pdf'],
+          allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
           addRandomSuffix: true,
           maximumSizeInBytes: 200 * 1024 * 1024 // 200 MB gacha ruxsat
         };
