@@ -357,8 +357,11 @@
           </div>
           <div class="chat-input-row">
             <textarea id="chat-input" placeholder="Savolingizni yozing..."></textarea>
+            <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
+            <button class="ghost-btn" id="chat-image-btn" title="Rasm biriktirish" style="border-color: var(--gold); color: var(--gold);">📷</button>
             <button class="glow-btn" id="chat-send">Yuborish</button>
           </div>
+          <div id="chat-image-preview" style="display:none; margin-top:8px;"></div>
           <div class="status" id="chat-status"></div>
         </div>
         <div class="book-col" id="book-col">
