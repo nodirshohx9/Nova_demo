@@ -201,8 +201,8 @@
   .teacher-layout{ display:flex; gap:20px; align-items:flex-start; transition: all .35s ease; }
   .chat-col{ flex: 1 1 100%; transition: flex-basis .35s ease; }
   .book-col{ flex: 0 0 0%; width:0; overflow:hidden; opacity:0; transition: all .35s ease; }
-  .teacher-layout.book-mode .chat-col{ flex: 0 0 320px; }
-  .teacher-layout.book-mode .book-col{ flex: 1 1 auto; width:auto; opacity:1; }
+  .teacher-layout.book-mode .chat-col{ flex: 0 0 320px; order: 2; }
+  .teacher-layout.book-mode .book-col{ flex: 1 1 auto; width:auto; opacity:1; order: 1; }
 
   .chat-window{ display:flex; flex-direction:column; gap:14px; max-height: 480px; overflow-y:auto; padding: 6px 4px 10px; }
   .msg{ display:flex; gap:10px; max-width: 92%; }
@@ -370,6 +370,10 @@
           <div id="book-problems"></div>
         </div>
       </div>
+      </div>
+
+    <div class="glass-card" style="margin-top:20px;">
+      <h2 class="sec-title" style="font-size:20px;">📚 Kitoblar</h2>
       <div id="book-grid" class="book-grid"></div>
     </div>
   </section>
