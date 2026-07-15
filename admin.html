@@ -313,11 +313,22 @@ document.getElementById('admin-add-btn').addEventListener('click', async ()=>{
       handleUploadUrl: '/api/upload'
     });
 
+    let coverUrl = '';
+    const coverFile = document.getElementById('admin-cover').files[0];
+    if(coverFile){
+      statusEl.textContent = "Muqova yuklanmoqda...";
+      const coverResult = await window.__blobUpload(coverFile.name, coverFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload'
+      });
+      coverUrl = coverResult.url;
+    }
+
     statusEl.textContent = "Saqlanmoqda...";
     const res = await fetch('/api/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, author, fileUrl: blobResult.url })
+      body: JSON.stringify({ title, author, fileUrl: blobResult.url, coverUrl })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Saqlash muvaffaqiyatsiz tugadi");
