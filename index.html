@@ -227,7 +227,20 @@
   }
 
 </parameter>
-  .chat-input-row{ display:flex; gap:10px; margin-top:14px; }
+  .chat-input-row{ display:flex; gap:8px; margin-top:14px; align-items:flex-end; }
+  .icon-btn{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--border);
+    background: rgba(255,255,255,0.05); color: var(--text); font-size:18px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .icon-btn:hover{ border-color: var(--blue); transform: translateY(-1px); }
+  .icon-btn.send-btn{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
+  .icon-btn.send-btn:hover{ background:#6FC3FF; }
+  .icon-btn.send-btn.stop-state{ background: var(--gold); border-color: var(--gold); }
+  .chat-thumb{ position:relative; display:inline-block; margin-top:8px; }
+  .chat-thumb img{ height:60px; border-radius:8px; border:1px solid var(--border); }
+  .chat-thumb .rm{ position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background: var(--space-1); border:1px solid var(--border); color: var(--text); font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .typing-dots{ display:flex; gap:4px; padding:4px 0; }
 .typing-dots span{ width:7px; height:7px; border-radius:50%; background: var(--gold); animation: typingBounce 1.2s infinite ease-in-out; }
 .typing-dots span:nth-child(2){ animation-delay: 0.2s; }
