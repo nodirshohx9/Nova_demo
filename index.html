@@ -797,6 +797,16 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
   }
 
   const bubbleEl = typingDiv.querySelector('.bubble');
+  const win = document.getElementById('chat-window');
+  chatAbortController = new AbortController();
+
+  try{
+    const res = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: chatHistory, max_tokens: 1000 }),
+      signal: chatAbortController.signal
+    });
     if(!res.ok || !res.body){
       const errData = await res.json().catch(()=>({}));
       throw new Error(errData.error || "Xatolik yuz berdi");
